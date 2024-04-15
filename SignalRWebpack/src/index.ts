@@ -4,6 +4,7 @@ import "./css/main.css";
 const divMessages: HTMLDivElement = document.querySelector("#divMessages");
 const tbMessage: HTMLInputElement = document.querySelector("#tbMessage");
 const btnSend: HTMLButtonElement = document.querySelector("#btnSend");
+const typing: HTMLDivElement = document.querySelector("#divTyping");
 const username = new Date().getTime();
 
 const connection = new signalR.HubConnectionBuilder()
@@ -21,31 +22,41 @@ connection.on("messageReceived", (username: string, message: string) => {
 
 connection.on("userTyping", username => {
     //display a message saying "so-and-so is typing..."
+    const paragraph = `<p>${username} is typing...</p>`
+    typing.innerHTML = paragraph;
 
     //remove the message after a timer expires
+    notifyTimer();
 
 })
 
 connection.start().catch((err) => document.write(err));
 
 tbMessage.addEventListener("keyup", (e: KeyboardEvent) => {
+    console.log("keyup");
     if (e.key === "Enter") {
-        send();
+        sendNewMessage();
     } else {
-        notify();
+        notifyUserTyping();
     }
 });
 
-btnSend.addEventListener("click", send);
+//event listeners will be in the the React Component, import the repo methods
+btnSend.addEventListener("click", sendNewMessage);
 
-function notify() {
-    connection.send("userTyping", username)
-        .then(() => {
-            //notify the timer here?
-        })        ;
+//these functions would go in a front-end conntectionRepo or something similar
+function notifyUserTyping() {
+    connection.send("userTyping", username);
 }
 
-function send() {
+function sendNewMessage() {
+    //this method doesn't wait on a response, the Promise resolves immediately once the message is sent by the client
     connection.send("newMessage", username, tbMessage.value)
-        .then(() => (tbMessage.value = "")); //this method doesn't wait on a response, the Promise resolves immediately once the message is sent by the client
+        .then(() => {
+            tbMessage.value = "";
+        }); 
+}
+
+function notifyTimer() {
+
 }
