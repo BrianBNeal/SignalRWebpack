@@ -9,9 +9,10 @@ const username = new Date().getTime();
 
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/hub")
+//    .withUrl("/hubs/chat", { accessTokenFactory: () => this.loginToken })
     .build();
 
-connection.on("messageReceived", (username: string, message: string) => {
+connection.on("newMessageNotification", (username: string, message: string) => {
     const m = document.createElement("div");
 
     m.innerHTML = `<div class="message-author">${username}</div><div>${message}</div>`;
@@ -20,13 +21,13 @@ connection.on("messageReceived", (username: string, message: string) => {
     divMessages.scrollTop = divMessages.scrollHeight;
 });
 
-connection.on("userTyping", username => {
+connection.on("userTypingNotification", username => {
     //display a message saying "so-and-so is typing..."
     const paragraph = `<p>${username} is typing...</p>`
     typing.innerHTML = paragraph;
 
     //remove the message after a timer expires
-    notifyTimer();
+    tryRefreshTimer();
 
 })
 
@@ -37,7 +38,7 @@ tbMessage.addEventListener("keyup", (e: KeyboardEvent) => {
     if (e.key === "Enter") {
         sendNewMessage();
     } else {
-        notifyUserTyping();
+        sendUserTyping();
     }
 });
 
@@ -45,18 +46,18 @@ tbMessage.addEventListener("keyup", (e: KeyboardEvent) => {
 btnSend.addEventListener("click", sendNewMessage);
 
 //these functions would go in a front-end conntectionRepo or something similar
-function notifyUserTyping() {
-    connection.send("userTyping", username);
+function sendUserTyping() {
+    connection.send("userTypingEndpoint", username);
 }
 
 function sendNewMessage() {
     //this method doesn't wait on a response, the Promise resolves immediately once the message is sent by the client
-    connection.send("newMessage", username, tbMessage.value)
+    connection.send("newMessageEndpoint", username, tbMessage.value)
         .then(() => {
             tbMessage.value = "";
         }); 
 }
 
-function notifyTimer() {
+function tryRefreshTimer() {
 
 }
